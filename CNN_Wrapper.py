@@ -8,7 +8,7 @@ def build_cnn(
     conv_channels=(32, 64),
     kernel_size=3,
     pool_size=2,
-    fc_hidden=128,
+    hidden_neurons=128,
     dropout=0.25,
     activation="relu",
     loss="cross_entropy",
@@ -26,7 +26,7 @@ def build_cnn(
         conv_channels: Tuple of output channels for each conv block.
         kernel_size:   Convolution kernel size.
         pool_size:     Max-pool window size (and stride).
-        fc_hidden:     Number of units in the hidden fully-connected layer.
+        hidden_neurons: Number of units in the hidden fully-connected layer.
         dropout:       Dropout probability before the final layer.
         activation:    'relu', 'leaky_relu', 'gelu', or 'tanh'.
         loss:          'cross_entropy', 'nll', 'multi_margin', or 'mse'.
@@ -72,10 +72,10 @@ def build_cnn(
     flat_features = channels * spatial * spatial
 
     layers.append(nn.Flatten())
-    layers.append(nn.Linear(flat_features, fc_hidden))
+    layers.append(nn.Linear(flat_features, hidden_neurons))
     layers.append(act_fn())
     layers.append(nn.Dropout(dropout))
-    layers.append(nn.Linear(fc_hidden, num_classes))
+    layers.append(nn.Linear(hidden_neurons, num_classes))
 
     # NLLLoss expects log-probabilities, so append LogSoftmax in that case.
     if loss == "nll":
@@ -110,6 +110,22 @@ def get_mnist_data(data_dir="./data", batch_size=64, num_workers=2):
         test_set, batch_size=batch_size, shuffle=False, num_workers=num_workers
     )
     return train_loader, test_loader
+
+def visualize_data(loader, num_images=8):
+    """Visualize a few images from the DataLoader."""
+    import matplotlib.pyplot as plt
+
+    images, labels = next(iter(loader))
+    images = images[:num_images]
+    labels = labels[:num_images]
+
+    fig, axes = plt.subplots(1, num_images, figsize=(num_images * 2, 2))
+    for i in range(num_images):
+        ax = axes[i]
+        ax.imshow(images[i].squeeze(), cmap="gray")
+        ax.set_title(f"Label: {labels[i].item()}")
+        ax.axis("off")
+    plt.show()
 
 
 def train(model, loader, optimizer, criterion, device, num_classes=10):
